@@ -18,7 +18,7 @@ def get_gtin_list_updated_since(date):
     '''
     # Need to convert date to UTC from CST
     url = "https://api.kwikee.com/manufacturer/qa/products"
-    querystring = {"updatedSince":"2019-04-05T00:00:00Z","page":"0"}
+    querystring = {"updatedSince":"2019-04-01T00:00:00Z","page":"0"}
     payload = ""
     response = requests.request("GET", url, data=payload, headers=headers, params=querystring)
     data = response.json()
@@ -69,41 +69,71 @@ def get_image_asset_retrieve(image_asset_id):
     data = response.json()
     return data
 
-def generateReport():
+def generate_report(gtin_list):
     '''
     Generate and populate excel report file
+    Input: None
+    Output: Excel workbook
     '''
     workbook = xlsxwriter.Workbook('mfr_report.xlsx')
-    return workbook
+    worksheet = generate_general_tab(workbook)
+    populate_general_tab(worksheet, gtin_list)
+    workbook.close()
+
 
 def generate_general_tab(workbook):
     '''
     Generate general tab headers to be populated with current product
     structure data
-    Input: Excel workbook
+    Input: None
+    Output: Excel worksheet
     '''
     worksheet = workbook.add_worksheet('General Info')
     general_tab_headers = [
         'gtin',
-        'name',
         'asset id',
-        'last modified',
+        'name',        
         'brand id',
+        'last modified',        
         'permission group ids',
-        'image asset id',
-        'image last modified'
+        'image 1 asset id',
+        'image 1 last modified'
     ]
     worksheet.write_row(0, 0, general_tab_headers)
-    workbook.close()
+    return worksheet
 
-def populate_general_tab(workbook, gtin):
-    for entry in gtin:
+
+def populate_general_tab(worksheet, gtin_list):
+    '''
+    Populates the general tab in an excel workbook, given
+    a worksheet and a gtin list
+    Input: worksheet, gtin_list
+    '''
+    # Begin populating with data after header row 
+    row = 1
+    for entry in gtin_list:
+        col = 0
+        permission_groups = ''
         data = get_current_product_structure(entry)
+        #convert permission groups to string
+        for permission in data['permissionGroups']:
+            permission_groups += permission + '; '
+        row_data = [
+            entry,
+            data['assetId'],
+            data['name'],
+            data['brand'],
+            data['lastModified'],
+            permission_groups
+        ]
+        worksheet.write_row(row, col, row_data)
+        row += 1
+
+test_gtin_list = get_gtin_list_updated_since(5)
+generate_report(test_gtin_list)
+#populate_general_tab(generate_general_tab(), test_gtin_list)
 
 
-generate_general_tab(generateReport())
 
-
-#test_gtin_list = get_gtin_list_updated_since(5)
 #print(get_current_product_structure(test_gtin_list[0]))
 #print(test_gtin_list)
