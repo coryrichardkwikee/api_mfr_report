@@ -94,6 +94,8 @@ def generate_general_tab(workbook):
         'asset id',
         'name',        
         'brand id',
+        'versions',
+        'variants',
         'last modified',        
         'permission group ids',
         'image 1 asset id',
@@ -114,20 +116,52 @@ def populate_general_tab(worksheet, gtin_list):
     for entry in gtin_list:
         col = 0
         permission_groups = ''
+        versions = ''
+        variants = ''
         data = get_current_product_structure(entry)
         #convert permission groups to string
         for permission in data['permissionGroups']:
             permission_groups += permission + '; '
+        #convert versions to string
+        for version in data['versions']:
+            versions += versions + '; '
+        #convert variants to string
+        for variant in data['variants']:
+            variants += variants + '; '
         row_data = [
             entry,
             data['assetId'],
             data['name'],
             data['brand'],
+            versions,
+            variants,
             data['lastModified'],
             permission_groups
         ]
         worksheet.write_row(row, col, row_data)
         row += 1
+
+
+def generate_image_tab(workbook):
+    '''
+    Generates an empty tab for image data
+    Input: Workbook
+    Output: Worksheet
+    '''
+    worksheet = workbook.add_worksheet('Images')
+    tab_headers = [
+        'gtin',
+
+    ]
+
+
+def populate_image_tab(worksheet, gtin_list):
+    '''
+    Populates the empty image tab in workbook
+    Input: worksheet, gtin_list
+    Output: None
+    '''
+    row = 1
 
 test_gtin_list = get_gtin_list_updated_since(5)
 generate_report(test_gtin_list)
