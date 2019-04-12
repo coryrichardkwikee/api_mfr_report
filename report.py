@@ -4,8 +4,8 @@ import xlsxwriter
 # Global Variables
 # API Credentials
 headers = {
-    'authUser': "KwikeeAPITestAccount",
-    'authPwd': "$*n8#@J=Frg4=Qzs",
+    'authUser': "DiadeisAPIUser",
+    'authPwd': "d*P7j(8)YL",
     'Ocp-Apim-Subscription-Key': "414de949421944f2a43fe549e5120a2a",
     'cache-control': "no-cache"
 }
@@ -51,7 +51,7 @@ def get_product_version_retrieve(asset_id):
     Return json response of product version.
     Requires asset id as input.
     '''
-    url = "https://api.kwikee.com/manufacturer/qa/products/versions/3885971"
+    url = "https://api.kwikee.com/manufacturer/qa/products/versions/{0}".format(asset_id)
     payload = ""
     response = requests.request("GET", url, data=payload, headers=headers)
     data = response.json()
@@ -63,7 +63,7 @@ def get_image_asset_retrieve(image_asset_id):
     Return json response of image asset data.
     Requires image asset id as input.
     '''
-    url = "https://api.kwikee.com/manufacturer/qa/image-assets/3830176"
+    url = "https://api.kwikee.com/manufacturer/qa/image-assets/{0}".format(image_asset_id)
     payload = ""
     response = requests.request("GET", url, data=payload, headers=headers)
     data = response.json()
@@ -73,7 +73,7 @@ def generate_report(gtin_list):
     '''
     Generate and populate excel report file
     Input: None
-    Output: Excel workbook
+    Output: workbook
     '''
     workbook = xlsxwriter.Workbook('mfr_report.xlsx')
     worksheet = generate_general_tab(workbook)
@@ -87,8 +87,8 @@ def generate_general_tab(workbook):
     '''
     Generate general tab headers to be populated with current product
     structure data
-    Input: None
-    Output: Excel worksheet
+    Input: workbook
+    Output: worksheet
     '''
     worksheet = workbook.add_worksheet('General Info')
     general_tab_headers = [
@@ -99,9 +99,7 @@ def generate_general_tab(workbook):
         'versions',
         'variants',
         'last modified',        
-        'permission group ids',
-        'image 1 asset id',
-        'image 1 last modified'
+        'permission group ids'
     ]
     worksheet.write_row(0, 0, general_tab_headers)
     return worksheet
@@ -112,6 +110,7 @@ def populate_general_tab(worksheet, gtin_list):
     Populates the general tab in an excel workbook, given
     a worksheet and a gtin list
     Input: worksheet, gtin_list
+    Output: None
     '''
     # Begin populating with data after header row 
     row = 1
@@ -124,19 +123,19 @@ def populate_general_tab(worksheet, gtin_list):
         #convert permission groups to string
         for permission in data['permissionGroups']:
             permission_groups += permission + '; '
+        '''
         #convert versions to string
         for version in data['versions']:
             versions += versions + '; '
         #convert variants to string
         for variant in data['variants']:
             variants += variants + '; '
+        '''
         row_data = [
             entry,
             data['assetId'],
             data['name'],
             data['brand'],
-            versions,
-            variants,
             data['lastModified'],
             permission_groups
         ]
@@ -154,7 +153,12 @@ def generate_image_tab(workbook):
     tab_headers = [
         'gtin',
         'asset id',
-        'image asset id'
+        'image asset id',
+        'image last modified',
+        'image permission groups',
+        'master mimetype',
+        'master url',
+        'master modified date'
     ]
     worksheet.write_row(0, 0, tab_headers)
     return worksheet
@@ -172,17 +176,58 @@ def populate_image_tab(worksheet, gtin_list):
         # reset col index for each gtin
         col = 0
         data = get_current_product_structure(gtin)
+        # test if gtin contains image data
+        try: 
+            x = data['images']
+            print('data is okay')
+        except:
+            print('data is not okay')
+            continue
         # Iterate over returned image assets and add image data to excel
         for image in data['images']:
+            # query for image asset data
             image_data = get_image_asset_retrieve(image['assetId'])
+            # convert image permission groups to string
+            permission_groups = ""
+            for permission in image['permissionGroups']:
+                permission_groups += permission + '; '
+            # pull out master image data
+            master_image_dict = find_master_image(image_data)
+            #print("master image dict is {0}".format(master_image_dict))
+            if master_image_dict == None:
+                continue
+            if isinstance(master_image_dict['modifiedDate'], dict):
+               master_image_dict['modifiedDate'] = None         
             # Construct row of data to be added for each image entry
             row_data = [
                 gtin,
                 data['assetId'],
-                image['assetId']
-            ]
+                image['assetId'],
+                image['lastModified'],
+                permission_groups,
+                master_image_dict['mimetype'],
+                master_image_dict['url'],
+                master_image_dict['modifiedDate']
+                ]
             worksheet.write_row(row, col, row_data)
-            row += 1       
+            row += 1
+
+
+def find_master_image(json_image_data):
+    '''
+    Scans json response from Image Asset - Retrieve call
+    for master image. Returns none if none.
+    Input: json dictionary
+    Output: master image dictionary
+    ''' 
+    # Throws error if image data not filled out. 
+    try:   
+        for file in json_image_data['responseData']['files']:
+            if file['key'] == 'master':
+                return file
+        return None
+    except:
+        return None
 
 
 test_gtin_list = get_gtin_list_updated_since(5)
