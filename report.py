@@ -78,6 +78,8 @@ def generate_report(gtin_list):
     workbook = xlsxwriter.Workbook('mfr_report.xlsx')
     worksheet = generate_general_tab(workbook)
     populate_general_tab(worksheet, gtin_list)
+    worksheet = generate_image_tab(workbook)
+    populate_image_tab(worksheet, gtin_list)
     workbook.close()
 
 
@@ -144,15 +146,18 @@ def populate_general_tab(worksheet, gtin_list):
 
 def generate_image_tab(workbook):
     '''
-    Generates an empty tab for image data
+    Generates an empty tab for image data and some headers
     Input: Workbook
     Output: Worksheet
     '''
     worksheet = workbook.add_worksheet('Images')
     tab_headers = [
         'gtin',
-
+        'asset id',
+        'image asset id'
     ]
+    worksheet.write_row(0, 0, tab_headers)
+    return worksheet
 
 
 def populate_image_tab(worksheet, gtin_list):
@@ -161,13 +166,24 @@ def populate_image_tab(worksheet, gtin_list):
     Input: worksheet, gtin_list
     Output: None
     '''
+    # set row index under headers
     row = 1
+    for gtin in gtin_list:
+        # reset col index for each gtin
+        col = 0
+        data = get_current_product_structure(gtin)
+        # Iterate over returned image assets and add image data to excel
+        for image in data['images']:
+            image_data = get_image_asset_retrieve(image['assetId'])
+            # Construct row of data to be added for each image entry
+            row_data = [
+                gtin,
+                data['assetId'],
+                image['assetId']
+            ]
+            worksheet.write_row(row, col, row_data)
+            row += 1       
+
 
 test_gtin_list = get_gtin_list_updated_since(5)
 generate_report(test_gtin_list)
-#populate_general_tab(generate_general_tab(), test_gtin_list)
-
-
-
-#print(get_current_product_structure(test_gtin_list[0]))
-#print(test_gtin_list)
