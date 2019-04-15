@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import requests
 import xlsxwriter
 
@@ -121,16 +122,22 @@ def populate_general_tab(worksheet, gtin_list):
         variants = ''
         data = get_current_product_structure(entry)
         #convert permission groups to string
+        count = 0
         for permission in data['permissionGroups']:
-            permission_groups += permission + '; '
-        '''
-        #convert versions to string
-        for version in data['versions']:
-            versions += versions + '; '
-        '''
+            if count >= 1:
+                permission_groups += '; {0}'.format(permission)
+            else:
+                permission_groups += permission
+            count += 1
+
         #convert variants to string
+        count = 0
         for variant in data['variants']:
-            variants += variants + '; '
+            if count >= 1:
+                variants += '; {0}'.format(variant)
+            else:
+                variants += variant
+            count += 1
         
         row_data = [
             entry,
@@ -190,8 +197,13 @@ def populate_image_tab(worksheet, gtin_list):
             image_data = get_image_asset_retrieve(image['assetId'])
             # convert image permission groups to string
             permission_groups = ""
+            count = 0
             for permission in image['permissionGroups']:
-                permission_groups += permission + '; '
+                if count >= 1:
+                    permission_groups += '; {0}'.format(permission)
+                else:
+                    permission_groups += permission
+                count += 1
             # pull out master image data
             master_image_dict = find_master_image(image_data)
             #print("master image dict is {0}".format(master_image_dict))
@@ -262,8 +274,13 @@ def populate_version_tab(worksheet, gtin_list):
         # parse primary version Id
         # convert permissions group to string
         permissions = ""
+        count = 0
         for permission in data['permissionGroups']:
-            permissions += '{0}; '.format(permission)
+            if count >= 1:
+                permissions += '; {0}'.format(permission)
+            else:
+                permissions += permission
+            count += 1
         row_data = [
             gtin,
             data['assetId'],
@@ -275,8 +292,13 @@ def populate_version_tab(worksheet, gtin_list):
         # parse remaining versions
         for version in data['versions']:
             permissions = ''
+            count = 0
             for permission in version['permissionGroups']:
-                permissions += '{0}; '.format(permission)
+                if count >= 1:
+                    permissions += '; {0}'.format(permission)
+                else:
+                    permissions += permission
+                count += 1
             row_data = [
                 gtin,
                 version['assetId'],
