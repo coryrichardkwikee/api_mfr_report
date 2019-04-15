@@ -70,6 +70,20 @@ def get_image_asset_retrieve(image_asset_id):
     data = response.json()
     return data
 
+
+def list_to_string(list):
+    count = 0
+    string_list = ''
+    for item in list:
+        if count >= 1:
+            string_list += '; {0}'.format(item)
+        else:
+            string_list += item
+        count += 1
+    return string_list
+
+
+
 def generate_report(gtin_list):
     '''
     Generate and populate excel report file
@@ -122,23 +136,9 @@ def populate_general_tab(worksheet, gtin_list):
         variants = ''
         data = get_current_product_structure(entry)
         #convert permission groups to string
-        count = 0
-        for permission in data['permissionGroups']:
-            if count >= 1:
-                permission_groups += '; {0}'.format(permission)
-            else:
-                permission_groups += permission
-            count += 1
-
+        permission_groups = list_to_string(data['permissionGroups'])
         #convert variants to string
-        count = 0
-        for variant in data['variants']:
-            if count >= 1:
-                variants += '; {0}'.format(variant)
-            else:
-                variants += variant
-            count += 1
-        
+        variants = list_to_string(data['variants'])        
         row_data = [
             entry,
             data['assetId'],
@@ -196,14 +196,7 @@ def populate_image_tab(worksheet, gtin_list):
             # query for image asset data
             image_data = get_image_asset_retrieve(image['assetId'])
             # convert image permission groups to string
-            permission_groups = ""
-            count = 0
-            for permission in image['permissionGroups']:
-                if count >= 1:
-                    permission_groups += '; {0}'.format(permission)
-                else:
-                    permission_groups += permission
-                count += 1
+            permission_groups = list_to_string(image['permissionGroups'])
             # pull out master image data
             master_image_dict = find_master_image(image_data)
             #print("master image dict is {0}".format(master_image_dict))
@@ -273,14 +266,7 @@ def populate_version_tab(worksheet, gtin_list):
         data = get_current_product_structure(gtin)
         # parse primary version Id
         # convert permissions group to string
-        permissions = ""
-        count = 0
-        for permission in data['permissionGroups']:
-            if count >= 1:
-                permissions += '; {0}'.format(permission)
-            else:
-                permissions += permission
-            count += 1
+        permissions = list_to_string(data['permissionGroups'])
         row_data = [
             gtin,
             data['assetId'],
@@ -291,14 +277,7 @@ def populate_version_tab(worksheet, gtin_list):
         row += 1
         # parse remaining versions
         for version in data['versions']:
-            permissions = ''
-            count = 0
-            for permission in version['permissionGroups']:
-                if count >= 1:
-                    permissions += '; {0}'.format(permission)
-                else:
-                    permissions += permission
-                count += 1
+            permissions = list_to_string(version['permissionGroups'])
             row_data = [
                 gtin,
                 version['assetId'],
