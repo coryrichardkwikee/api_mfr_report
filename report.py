@@ -80,6 +80,8 @@ def generate_report(gtin_list):
     populate_general_tab(worksheet, gtin_list)
     worksheet = generate_image_tab(workbook)
     populate_image_tab(worksheet, gtin_list)
+    worksheet = generate_version_tab(workbook)
+    populate_version_tab(worksheet, gtin_list)
     workbook.close()
 
 
@@ -92,13 +94,13 @@ def generate_general_tab(workbook):
     '''
     worksheet = workbook.add_worksheet('General Info')
     general_tab_headers = [
-        'gtin',
-        'asset id',
-        'name',        
-        'brand id',
-        'variants',
-        'last modified',        
-        'permission group ids'
+        'GTIN',
+        'Asset Id',
+        'Name',        
+        'Brand Id',
+        'Variants',
+        'Last Modified',        
+        'Permission Group Ids'
     ]
     worksheet.write_row(0, 0, general_tab_headers)
     return worksheet
@@ -113,10 +115,9 @@ def populate_general_tab(worksheet, gtin_list):
     '''
     # Begin populating with data after header row 
     row = 1
+    col = 0
     for entry in gtin_list:
-        col = 0
         permission_groups = ''
-        versions = ''
         variants = ''
         data = get_current_product_structure(entry)
         #convert permission groups to string
@@ -152,14 +153,14 @@ def generate_image_tab(workbook):
     '''
     worksheet = workbook.add_worksheet('Images')
     tab_headers = [
-        'gtin',
-        'asset id',
-        'image asset id',
-        'image last modified',
-        'image permission groups',
-        'master mimetype',
-        'master url',
-        'master modified date'
+        'GTIN',
+        'Asset Id',
+        'Image Asset Id',
+        'Image Last Modified',
+        'Image Permission Groups',
+        'Master Mimetype',
+        'Master URL',
+        'Master Modified Date'
     ]
     worksheet.write_row(0, 0, tab_headers)
     return worksheet
@@ -171,18 +172,17 @@ def populate_image_tab(worksheet, gtin_list):
     Input: worksheet, gtin_list
     Output: None
     '''
-    # set row index under headers
+    # set index under headers
     row = 1
+    col = 0
     for gtin in gtin_list:
-        # reset col index for each gtin
-        col = 0
         data = get_current_product_structure(gtin)
         # test if gtin contains image data
         try: 
             x = data['images']
-            print('data is okay')
+            # print('data contains images')
         except:
-            print('data is not okay')
+            print('{0} does not contain images'.format(gtin))
             continue
         # Iterate over returned image assets and add image data to excel
         for image in data['images']:
@@ -211,6 +211,7 @@ def populate_image_tab(worksheet, gtin_list):
                 master_image_dict['modifiedDate']
                 ]
             worksheet.write_row(row, col, row_data)
+            # Insert next row below current row
             row += 1
 
 
@@ -229,6 +230,61 @@ def find_master_image(json_image_data):
         return None
     except:
         return None
+
+
+def generate_version_tab(workbook):
+    '''Generates empty verion tab in workbook
+    Input: workbook
+    Output: worksheet
+    '''
+    worksheet = workbook.add_worksheet('Versions')
+    tab_headers = [
+        'GTIN',
+        'Version Asset Id',
+        'Version Permission Group Ids',
+        'Last Modified'
+    ]
+    worksheet.write_row(0, 0, tab_headers)
+    return worksheet
+
+
+def populate_version_tab(worksheet, gtin_list):
+    '''Populates the version tab of report
+    Input: worksheet, gtin_list
+    Output: None
+    '''
+    # set row index after headers
+    row = 1
+    col = 0
+    for gtin in gtin_list:
+        # get product structure data
+        data = get_current_product_structure(gtin)
+        # parse primary version Id
+        # convert permissions group to string
+        permissions = ""
+        for permission in data['permissionGroups']:
+            permissions += '{0}; '.format(permission)
+        row_data = [
+            gtin,
+            data['assetId'],
+            permissions,
+            data['lastModified']
+        ]
+        worksheet.write_row(row, col, row_data)
+        row += 1
+        # parse remaining versions
+        for version in data['versions']:
+            permissions = ''
+            for permission in version['permissionGroups']:
+                permissions += '{0}; '.format(permission)
+            row_data = [
+                gtin,
+                version['assetId'],
+                permissions,
+                version['lastModified']
+            ]
+            worksheet.write_row(row, col, row_data)
+            row += 1
 
 
 test_gtin_list = get_gtin_list_updated_since(5)
