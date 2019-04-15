@@ -96,7 +96,6 @@ def generate_general_tab(workbook):
         'asset id',
         'name',        
         'brand id',
-        'versions',
         'variants',
         'last modified',        
         'permission group ids'
@@ -127,15 +126,17 @@ def populate_general_tab(worksheet, gtin_list):
         #convert versions to string
         for version in data['versions']:
             versions += versions + '; '
+        '''
         #convert variants to string
         for variant in data['variants']:
             variants += variants + '; '
-        '''
+        
         row_data = [
             entry,
             data['assetId'],
             data['name'],
             data['brand'],
+            variants,
             data['lastModified'],
             permission_groups
         ]
